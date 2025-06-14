@@ -1,12 +1,14 @@
+// vercel.json
 {
   "version": 2,
   "builds": [
-    { "src": "index.js", "use": "@vercel/node" }
+    {
+      "src": "index.js",
+      "use": "@vercel/node"
+    }
   ],
   "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "index.js"
-    }
+    // Redirect any /api/... request into your index.js
+    { "src": "/api/(.*)", "dest": "/index.js" }
   ]
 }

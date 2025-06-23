@@ -1,7 +1,6 @@
-// index.js (simplified, only exact paths)
+// index.js (with manual CORS & preflight handling)
 
 const express = require("express");
-const cors = require("cors");
 const OpenAI = require("openai");
 require("dotenv").config();
 
@@ -12,8 +11,21 @@ const { detectUserType } = require("./aiPromptTemplate");
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS for all origins
-app.use(cors());
+// 🛡️ Manual CORS & preflight handling
+app.use((req, res, next) => {
+  // Allow requests from anywhere (or replace "*" with "https://www.figma.com" if needed)
+  res.header("Access-Control-Allow-Origin", "*");
+  // Allow these HTTP methods
+  res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  // Allow these request headers
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  // If this is a preflight OPTIONS request, end it here
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(express.json());
 
 // Health endpoint
@@ -47,9 +59,11 @@ app.post("/api/message", async (req, res) => {
   }
 
   try {
+    // Add behaviorType to userProfile
     const behaviorType = detectUserType(message);
     const finalUserProfile = { ...userProfile, behaviorType };
 
+    // Build the system prompt with all context
     const systemPrompt = buildSystemPrompt({
       hatchName,
       projectSummary,
@@ -66,6 +80,7 @@ app.post("/api/message", async (req, res) => {
       fewShotExamples: exampleInteractions,
     });
 
+    // Initialize OpenAI and send the prompt
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const resp = await openai.chat.completions.create({
       model: "gpt-4",
@@ -80,6 +95,7 @@ app.post("/api/message", async (req, res) => {
       ],
     });
 
+    // Return the trimmed reply
     return res.json({ reply: resp.choices[0].message.content.trim() });
   } catch (err) {
     console.error("OpenAI error:", err);

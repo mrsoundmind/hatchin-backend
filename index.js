@@ -41,11 +41,9 @@ app.post("/api/message", async (req, res) => {
   } = req.body;
 
   if (!projectId || !hatchName || !message) {
-    return res
-      .status(400)
-      .json({
-        error: "Missing required fields: projectId, hatchName, or message.",
-      });
+    return res.status(400).json({
+      error: "Missing required fields: projectId, hatchName, or message.",
+    });
   }
 
   try {
